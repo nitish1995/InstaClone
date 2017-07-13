@@ -4,13 +4,6 @@ from django.db import models
 import uuid
 # Create your models here.
 
-class User(models.Model):
-    name = models.CharField(max_length=255)
-    phone = models.CharField(max_length=30)
-    age = models.IntegerField(default=0)
-    created_on = models.DateTimeField(auto_now_add=True)
-    has_verified_mobile = models.BooleanField(default=False)
-
 class UserModel(models.Model):
     email = models.EmailField()
     name = models.CharField(max_length=120)
@@ -27,3 +20,11 @@ class SessionToken(models.Model):
 
     def create_token(self):
         self.session_token = uuid.uuid4()
+
+class PostModel(models.Model):
+    user = models.ForeignKey(UserModel)
+    image = models.FileField(upload_to = 'user_images')
+    image_url = models.CharField(max_length=255)
+    caption = models.CharField(max_length=240)
+    created_on = models.DateTimeField(auto_now_add=True)
+    updated_on = models.DateTimeField(auto_now=True)

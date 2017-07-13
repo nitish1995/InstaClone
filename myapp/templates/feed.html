@@ -4,9 +4,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>InstaGram</title>
 </head>
 <body>
-  TODO: MAKE THE FEEDS PAGE
+    {% for post in posts %}
+
+    <h3>Posted By: {{post.user.username}}</h3>
+    <img src="{{post.image_url}}">
+    <span>{{post.caption}}</span>
+
+    {% endfor %}
 </body>
 </html>
