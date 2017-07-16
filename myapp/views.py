@@ -5,8 +5,8 @@ from imgurpython import ImgurClient
 from project_sb.settings import BASE_DIR
 from imgurkey import client_id,client_secret
 from django.shortcuts import render, redirect
-from forms import SignUpForm, LogInForm, PostForm
-from models import UserModel, SessionToken, PostModel
+from forms import SignUpForm, LogInForm, PostForm, LikeForm, CommentForm
+from models import CommentModel,UserModel, SessionToken, PostModel, LikeModel
 from django.contrib.auth.hashers import make_password, check_password
 from datetime import timedelta
 from django.utils import timezone
@@ -22,7 +22,9 @@ def signup_view(request):
             password = make_password(form.cleaned_data['password'])
             user = UserModel(name = name, email = email, password = password, username = username)
             user.save()
-            return render(request, 'success.html')
+            return redirect('/login/')
+        else:
+            return render(request, 'feed1.html')
 
     elif request.method == 'GET':
         form = SignUpForm()
@@ -45,6 +47,7 @@ def login_view(request):
                     token = SessionToken(user=user)
                     token.create_token()
                     token.save()
+
                     response = redirect('feed/')
                     response.set_cookie(key='session_token', value=token.session_token)
                     return response
@@ -65,6 +68,10 @@ def feed_view(request):
         posts = PostModel.objects.all()
         if len(posts) > 0:
             posts = posts.order_by('-created_on')
+            for post in posts:
+                existing_like = LikeModel.objects.filter(post_id=post.id, user=user).first()
+                if existing_like:
+                    post.has_liked = True
             return render(request, 'feed.html', {'posts' : posts})
         else:
             return render(request, 'feed1.html')
@@ -110,5 +117,40 @@ def post_view(request):
 
                 return redirect('/feed/')
 
+    else:
+        return redirect('/login/')
+
+
+def like_view(request):
+    user = check_validation(request)
+    if user and request.method == "POST":
+        form = LikeForm(request.POST)
+        if form.is_valid():
+            post_id = form.cleaned_data.get('post').id
+            existing_like = LikeModel.objects.filter(post_id=post_id, user=user).first()
+            if not existing_like:
+                LikeModel.objects.create(post_id=post_id, user=user)
+            else:
+                existing_like.delete()
+
+            return redirect('/feed/')
+        else:
+            return render(request, 'feed1.html')
+    else:
+        return redirect('/login/')
+
+def comment_view(request):
+    user = check_validation(request)
+    if user and request.method == 'POST':
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            post_id = form.cleaned_data.get('post').id
+            comment_text = form.cleaned_data.get('comment_text')
+            comment = CommentModel.objects.create(user=user, post_id=post_id, comment_text=comment_text)
+            comment.save()
+            return redirect('/feed/')
+        else:
+            return redirect('/feed/')
+        pass
     else:
         return redirect('/login/')
