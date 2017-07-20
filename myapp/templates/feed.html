@@ -7,6 +7,19 @@
     <title>InstaGram</title>
 </head>
 <body>
+    <div style="background: Green">
+        <h1 style="display: inline">Swach Bharat</h1>
+        <div style="display: inline; float: right">
+            <form method="get" action="/logout/">
+            <input type="submit" value="LOGOUT">
+            </form>
+        </div>
+        <div style="display: inline; float: right">
+            <form method="get" action="/post/">
+            <input type="submit" value="POST">
+            </form>
+        </div>
+    </div>
     {% for post in posts %}
 
     <h3>Posted By: {{post.user.username}}</h3>

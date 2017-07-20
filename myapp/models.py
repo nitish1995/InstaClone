@@ -2,13 +2,14 @@
 from __future__ import unicode_literals
 from django.db import models
 import uuid
+from django.core.validators import RegexValidator
 # Create your models here.
 
 class UserModel(models.Model):
     email = models.EmailField()
-    name = models.CharField(max_length=120)
-    username = models.CharField(max_length=120)
-    password = models.CharField(max_length=40)
+    name = models.CharField(max_length=120,)
+    username = models.CharField(max_length=120, validators=[RegexValidator(regex='^.{4,}$', message='Usename should be atleast 4 character long.', code='min_length')])
+    password = models.CharField(max_length=40, validators=[RegexValidator(regex='^.{5,}$', message='Password should be atleast 6 character long.', code='min_length')])
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now=True)
 
@@ -27,6 +28,7 @@ class PostModel(models.Model):
     image = models.FileField(upload_to = 'user_images')
     image_url = models.CharField(max_length=255)
     caption = models.CharField(max_length=240)
+    dirty = models.BooleanField(default=False)
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now=True)
 

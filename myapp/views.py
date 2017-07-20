@@ -1,16 +1,41 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
-from imgurpython import ImgurClient
+
+from __future__ import unicode_literals
 from project_sb.settings import BASE_DIR
-from imgurkey import client_id,client_secret
+from imgurpython import ImgurClient
+from imgurkey import client_id,client_secret,sendgrid_key, cloudapi_key,cloudapi_secret, clari_key
 from django.shortcuts import render, redirect
 from forms import SignUpForm, LogInForm, PostForm, LikeForm, CommentForm
 from models import CommentModel,UserModel, SessionToken, PostModel, LikeModel
 from django.contrib.auth.hashers import make_password, check_password
 from datetime import timedelta
 from django.utils import timezone
+import sendgrid
+import cloudinary.uploader
+import cloudinary.api
+from clarifai.rest import ClarifaiApp
+import pdb
+
+import sys
+reload(sys)
+sys.setdefaultencoding('utf-8')
+
+dirty = ['GARBAGE','POLLUTION','WASTE','TRASH','LITTER']
+
+
 # Create your views here.
+
+app = ClarifaiApp(api_key=clari_key)
+model = app.models.get('general-v1.3')
+
+cloudinary.config(
+  cloud_name = "instaclonecloud",
+  api_key = cloudapi_key,
+  api_secret = cloudapi_secret
+)
+
+
 
 def signup_view(request):
     if request.method == "POST":
@@ -22,9 +47,34 @@ def signup_view(request):
             password = make_password(form.cleaned_data['password'])
             user = UserModel(name = name, email = email, password = password, username = username)
             user.save()
+
+
+            subject = "Welcome to Swach Bharat"
+            from_email = "chauhannitish1995@gmail.com"
+            from_name = "Nitish Chauhan"
+            message = "Your account is successfully created."
+            my_client = sendgrid.SendGridAPIClient(apikey=sendgrid_key)
+            payload = {
+                "personalizations":[{
+                    "to":[{"email":email }],
+                    "subject": subject
+                }],
+                "from": {
+                    "email": from_email,
+                    "name": from_name
+                },
+                "content": [{
+                    "type":"text/html",
+                    "value": message
+                }]
+            }
+            response = my_client.client.mail.send.post(request_body=payload)
+
+
             return redirect('/login/')
         else:
-            return render(request, 'feed1.html')
+            errors = form.errors
+            return render(request, 'index.html', {'form': form, 'errors':errors})
 
     elif request.method == 'GET':
         form = SignUpForm()
@@ -36,6 +86,7 @@ def signup_view(request):
 
 
 def login_view(request):
+    getform = LogInForm()
     if request.method == "POST":
         form = LogInForm(request.POST)
         if form.is_valid():
@@ -52,11 +103,17 @@ def login_view(request):
                     response.set_cookie(key='session_token', value=token.session_token)
                     return response
                 else:
-                    print "Invalid User"
+                    message = "Wrong Password."
+                    return render(request, 'login.html', {'form':getform,"login_error":message})
+            else:
+                message = "User does not exist."
+                return render(request, 'login.html', {'form':getform,"login_error":message})
+        else:
+            errors = form.errors
+            return render(request, 'login.html', {'form':getform,"errors":errors})
 
-    elif request.method == "GET":
-        form = LogInForm()
-    return render(request, 'login.html', {'form': form})
+
+    return render(request, 'login.html', {'form': getform})
 
 
 
@@ -98,11 +155,7 @@ def check_validation(request):
 def post_view(request):
     user = check_validation(request)
     if user:
-        if request.method == 'GET':
-            form = PostForm()
-            return render(request, 'post.html', {'form' : form})
-
-        elif request.method == 'POST':
+        if request.method == 'POST':
             form = PostForm(request.POST, request.FILES)
             if form.is_valid():
                 image = form.cleaned_data.get('image')
@@ -111,11 +164,35 @@ def post_view(request):
                 post.save()
 
                 client = ImgurClient(client_id, client_secret)
-                path = str(BASE_DIR +'/'+ post.image.url)
+                path = str(BASE_DIR + '/' + post.image.url)
                 post.image_url = client.upload_from_path(path, anon=True)['link']
                 post.save()
 
+                #path = str(BASE_DIR + '/' + post.image.url)
+                #upload = cloudinary.uploader.upload(path)
+                #pdb.set_trace()
+                #post.image_url = upload['url']
+                #post.save()
+
+                response = model.predict_by_url(post.image_url)
+                response = response['outputs'][0]['data']['concepts']
+                is_dirty = False
+                for word in dirty:
+                    for imgword in response:
+                        image_word = imgword['name']
+                        image_word = image_word.upper()
+                        if image_word == word:
+                            is_dirty = True
+                            break
+
+                if is_dirty:
+                    post.dirty = True
+                    post.save()
+
                 return redirect('/feed/')
+        else:
+            form = PostForm()
+            return render(request, 'post.html', {'form': form})
 
     else:
         return redirect('/login/')
@@ -154,3 +231,20 @@ def comment_view(request):
         pass
     else:
         return redirect('/login/')
+
+
+def logout_view(request):
+    response = redirect('/signup/')
+    response.delete_cookie('session_token')
+    return response
+
+
+def user_view(request):
+    username = request.GET.get('q', '')
+    user = UserModel.objects.filter(username = username).first()
+    if user:
+        posts = PostModel.objects.filter(user=user)
+        if posts:
+            return render(request, 'oneuser.html', {'posts':posts})
+
+    return redirect('/signup/')
