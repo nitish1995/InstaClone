@@ -6,18 +6,27 @@
 </head>
 <body>
 
+
+<!---------------------------ITERATING OVER USER POST------------------------------------------------------------------>
 {% for post in posts %}
 
+    <!---------------------POSTEDBY, IMAGE AND CAPTION----------------------------------------------------------------->
     <h3>Posted By: {{post.user.username}}</h3>
     <img src="{{post.image_url}}">
     <span>{{post.caption}}</span>
 
 
 
+
+    <!----------------------COUNT FOR LIKE----------------------------------------------------------------------------->
     <div style="display:inline-block">
       <h3>{{ post.like_count }} liked this</h3>
     </div>
 
+
+
+
+    <!----------------------------COMMENT FOR POST--------------------------------------------------------------------->
     <div>
         {% for comment in post.comments %}
         <p>
@@ -28,6 +37,8 @@
     </div>
 {% endfor %}
 
+
+<!----------PROVIDING LITTLE DETAILS AND NO FORMS BECAUSE THIS CAN BE ACCESSED WITHOUT LOGGING IN LIKE INSTAGRAM------->
 
 </body>
 </html>

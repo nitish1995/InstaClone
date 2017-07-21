@@ -32,7 +32,11 @@
     }
     </style>
 </head>
+
+
 <body>
+
+        <!--------------------------------------BOX FOR SHOWING FORM ERROR--------------------------------------------->
         {% if errors %}
         <div class="alert">
         <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span>
@@ -42,11 +46,19 @@
             {{errors.password}}
         </div>
         {% endif %}
+
+
+
+
+    <!--------------------------------MAIN PAGE TITLE------------------------------------------------------------------>
 	<div class="main">
             <h1> Instagram Clone</h1>
             <h3>Sign Up</h3>
     </div>
 
+
+
+    <!------------------------------------SIGNUP FORM------------------------------------------------------------------>
     <div>
         <form method="post">
             {% csrf_token %}
@@ -77,6 +89,9 @@
 
     </div><br><br>
 
+
+
+     <!--------------------------------LINK FOR LOGIN PAGE------------------------------------------------------------->
     <div><h3>Already a user?</h3><a href="login/">Login</a> </div>
 </body>
 </html>
